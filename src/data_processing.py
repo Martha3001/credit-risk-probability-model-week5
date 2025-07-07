@@ -2,9 +2,8 @@ import pandas as pd
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, LabelEncoder
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.preprocessing import OneHotEncoder, LabelEncoder, MinMaxScaler, StandardScaler
+from sklearn.cluster import KMeans
 
 class AggregateFeatures(BaseEstimator, TransformerMixin):
     """
@@ -128,3 +127,36 @@ def process_features(df):
     pipeline = build_feature_pipeline()
     features = pipeline.fit_transform(df)
     return features
+
+def assign_high_risk_label(rfm, n_clusters=3, random_state=42):
+    """
+    Scale RFM features, perform KMeans clustering, and assign high-risk label.
+    Returns rfm DataFrame with Cluster and is_high_risk columns.
+    """
+    rfm_features = rfm[['Recency', 'Frequency', 'Monetary']]
+    scaler = StandardScaler()
+    rfm_scaled = scaler.fit_transform(rfm_features)
+    kmeans = KMeans(n_clusters=n_clusters, random_state=random_state)
+    rfm['Cluster'] = kmeans.fit_predict(rfm_scaled)
+    cluster_stats = rfm.groupby('Cluster')[['Frequency', 'Monetary']].mean()
+    high_risk_cluster = cluster_stats.sort_values(['Frequency', 'Monetary']).index[0]
+    rfm['is_high_risk'] = (rfm['Cluster'] == high_risk_cluster).astype(int)
+    return rfm
+
+def calculate_rfm(df, snapshot_date=None):
+    """
+    Calculate RFM (Recency, Frequency, Monetary) metrics for each CustomerId.
+    snapshot_date: datetime to calculate recency from. If None, use max(TransactionStartTime)+1 day.
+    Returns a DataFrame with columns: CustomerId, Recency, Frequency, Monetary
+    """
+    if snapshot_date is None:
+        snapshot_date = pd.to_datetime(df['TransactionStartTime']).max() + pd.Timedelta(days=1)
+    else:
+        snapshot_date = pd.to_datetime(snapshot_date)
+    rfm = df.groupby('CustomerId').agg({
+        'TransactionStartTime': lambda x: (snapshot_date - pd.to_datetime(x).max()).days,
+        'TransactionId': 'count',
+        'Amount': 'sum'
+    }).reset_index()
+    rfm.columns = ['CustomerId', 'Recency', 'Frequency', 'Monetary']
+    return rfm
