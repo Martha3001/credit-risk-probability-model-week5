@@ -1,9 +1,15 @@
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import pandas as pd
 import numpy as np
 from src.data_processing import (
-    AggregateFeatures, ExtractDateFeatures, CategoricalEncoder, 
+    AggregateFeatures, ExtractDateFeatures, CategoricalEncoder,
     NumericalScaler, assign_high_risk_label, calculate_rfm
 )
+
 
 def test_aggregate_features():
     df = pd.DataFrame({
@@ -12,8 +18,11 @@ def test_aggregate_features():
     })
     agg = AggregateFeatures().fit_transform(df)
     assert 'total_transaction_amount' in agg.columns
-    assert agg.loc[agg['CustomerId'] == 1, 'total_transaction_amount'].iloc[0] == 300
-    assert agg.loc[agg['CustomerId'] == 2, 'total_transaction_amount'].iloc[0] == 300
+    assert agg.loc[agg['CustomerId'] == 1,
+                   'total_transaction_amount'].iloc[0] == 300
+    assert agg.loc[agg['CustomerId'] == 2,
+                   'total_transaction_amount'].iloc[0] == 300
+
 
 def test_extract_date_features():
     df = pd.DataFrame({'TransactionStartTime': ['2024-01-01 10:00:00']})
@@ -24,6 +33,7 @@ def test_extract_date_features():
     assert 'transaction_month' in features.columns
     assert 'transaction_year' in features.columns
 
+
 def test_categorical_encoder():
     df = pd.DataFrame({'A': ['x', 'y'], 'B': ['cat', 'dog']})
     enc = CategoricalEncoder(onehot_columns=['A'], label_columns=['B'])
@@ -32,12 +42,14 @@ def test_categorical_encoder():
     assert any(col.startswith('A_') for col in transformed.columns)
     assert 'B_label' in transformed.columns
 
+
 def test_numerical_scaler():
     df = pd.DataFrame({'num': [1, 2, 3]})
     scaler = NumericalScaler(method='standard', columns=['num'])
     scaler.fit(df)
     scaled = scaler.transform(df.copy())
     np.testing.assert_almost_equal(scaled['num'].mean(), 0, decimal=6)
+
 
 def test_calculate_rfm():
     df = pd.DataFrame({
@@ -47,7 +59,10 @@ def test_calculate_rfm():
         'Amount': [100, 200, 300]
     })
     rfm = calculate_rfm(df)
-    assert set(['CustomerId', 'Recency', 'Frequency', 'Monetary']).issubset(rfm.columns)
+    assert set(
+        ['CustomerId', 'Recency', 'Frequency', 'Monetary']
+        ).issubset(rfm.columns)
+
 
 def test_assign_high_risk_label():
     rfm = pd.DataFrame({
