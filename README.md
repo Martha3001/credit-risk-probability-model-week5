@@ -30,7 +30,7 @@ In regulated environments, the trade-off centers on balancing **predictive power
    - CI/CD with GitHub Actions (linting, unit tests).
 
 ## Project Structure
-
+```
 credit-risk-probability-model-week5/
 ├── .github/workflows/ # CI/CD (linting, testing)
 │ └── ci.yml
@@ -52,7 +52,7 @@ credit-risk-probability-model-week5/
 ├── docker-compose.yml
 ├── requirements.txt # Dependencies
 └── README.md
-
+```
 ## Setup
 1. Clone: `git clone https://github.com/Martha3001/credit-risk-probability-model-week5.git`
 2. Create venv: `python -m venv .venv`
